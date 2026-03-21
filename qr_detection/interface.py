@@ -1,8 +1,8 @@
 from pathlib import Path
 from detector import QRDetector
 
-# Project root is now 2 levels up (was in vision/, now in QR detection/)
-project_root = Path(__file__).resolve().parents[2]
+# Project root is one level up from qr_detection folder
+project_root = Path(__file__).resolve().parents[1]
 data_yaml = project_root / "data" / "data.yaml"
 
 # QR detection folder for saving runs and outputs
