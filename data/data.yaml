@@ -1,4 +1,4 @@
-path: C:/Users/unigi/Desktop/CFWorkshop/Autonomous Detection Project/data
+path: data
 train: images/train
 val: images/val
 test: images/test
