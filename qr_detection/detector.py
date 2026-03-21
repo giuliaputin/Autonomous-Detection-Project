@@ -6,25 +6,9 @@ YOLOv8/Ultralytics detector for QR-code object detection.
 This version is written for the REAL object-detection dataset format used by
 Ultralytics YOLO detect models such as yolov8n.pt.
 
-Dataset structure expected
---------------------------
-data/
-├─ images/
-│  ├─ train/
-│  ├─ val/
-│  └─ test/
-├─ labels/
-│  ├─ train/
-│  ├─ val/
-│  └─ test/
-└─ data.yaml
-
 Important:
 - The images do NOT contain the labels "inside" the image file.
 - Each image has a matching .txt file in labels/... with the same filename stem.
-- Example:
-    images/train/img001.jpg
-    labels/train/img001.txt
 
 Label format in each .txt file
 ------------------------------
@@ -36,9 +20,6 @@ All coordinates are NORMALIZED between 0 and 1 relative to image size.
 For a single-class QR-code dataset:
 - class_id is always 0
 - names in data.yaml should be: 0: QR
-
-Example label file for one QR code:
-0 0.512500 0.430000 0.225000 0.180000
 
 If an image has NO QR code:
 - create an EMPTY .txt file with the same stem
