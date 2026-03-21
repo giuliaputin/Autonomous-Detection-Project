@@ -95,6 +95,7 @@ data/label files/
 *.tmp
 *.tmp.*
 *~
+data
 
 qr_detection/runs
 data

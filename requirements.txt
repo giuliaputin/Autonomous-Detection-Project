@@ -1,0 +1,14 @@
+# Core numeric + image processing
+numpy>=1.24.0
+opencv-python>=4.8.0
+
+# YOLOv8 training/inference stack (includes PyTorch dependency)
+ultralytics>=8.2.0
+
+# QR decoding
+zxing-cpp>=2.2.0
+
+# Note:
+# If you want to force CUDA-enabled PyTorch for your RTX GPU, install PyTorch
+# using the official selector command from https://pytorch.org/get-started/locally/
+# before running: pip install -r requirements.txt
