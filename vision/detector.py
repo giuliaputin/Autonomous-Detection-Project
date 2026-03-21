@@ -1,158 +1,329 @@
 """
 detector.py
 
-Neural network model and detector wrapper for smiley detection.
+YOLOv8/Ultralytics detector for QR-code object detection.
 
-First version:
-- Binary classifier: smiley vs not_smiley
-- Uses a small CNN in PyTorch
-- Can be trained later with a dataset of labeled images
+This version is written for the REAL object-detection dataset format used by
+Ultralytics YOLO detect models such as yolov8n.pt.
 
-Expected usage:
-    detector = Detector(model_path="models/smiley_cnn.pth")
-    result = detector.predict(frame)
+Dataset structure expected
+--------------------------
+data/
+├─ images/
+│  ├─ train/
+│  ├─ val/
+│  └─ test/
+├─ labels/
+│  ├─ train/
+│  ├─ val/
+│  └─ test/
+└─ data.yaml
 
-Output format:
-{
-    "found": True/False,
-    "confidence": float,
-    "label": "smiley" or "not_smiley"
-}
+Important:
+- The images do NOT contain the labels "inside" the image file.
+- Each image has a matching .txt file in labels/... with the same filename stem.
+- Example:
+    images/train/img001.jpg
+    labels/train/img001.txt
+
+Label format in each .txt file
+------------------------------
+One object per line:
+<class_id> <x_center> <y_center> <width> <height>
+
+All coordinates are NORMALIZED between 0 and 1 relative to image size.
+
+For a single-class QR-code dataset:
+- class_id is always 0
+- names in data.yaml should be: 0: QR
+
+Example label file for one QR code:
+0 0.512500 0.430000 0.225000 0.180000
+
+If an image has NO QR code:
+- create an EMPTY .txt file with the same stem
+  Example:
+    images/train/no_qr_01.jpg
+    labels/train/no_qr_01.txt   # empty file
+
+This lets YOLO learn both positive and negative scenes.
+
+Training notes
+--------------
+- We use transfer learning from COCO-pretrained yolov8n.pt.
+- Start with mostly defaults and only a few chosen hyperparameters.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, List, Optional
 
 import cv2
-import numpy as np
-import torch
-import torch.nn as nn
+from ultralytics import YOLO
 
 
-@dataclass
-class DetectorConfig:
-    image_size: int = 64
-    threshold: float = 0.7
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+class QRDetector:
+    """Ultralytics YOLOv8 detector for QR codes."""
 
+    def __init__(self, model_path: str = "yolov8n.pt", conf_threshold: float = 0.5):
+        """
+        Load a pretrained YOLO detection model.
 
-class SmileyCNN(nn.Module):
-    """
-    Small convolutional neural network for binary classification.
+        Parameters
+        ----------
+        model_path : str
+            Path to a YOLO detection model. For transfer learning, start with
+            'yolov8n.pt' (nano model pretrained on COCO).
+        conf_threshold : float
+            Minimum confidence used when filtering predictions for display.
+        """
+        self.model = YOLO(model_path)
+        self.conf_threshold = conf_threshold
 
-    Input:
-        [batch, 3, 64, 64]
+    @staticmethod
+    def create_dataset_structure(base_dir: str = "data") -> None:
+        """
+        Create the folder structure required by Ultralytics YOLO detection.
 
-    Output:
-        logits of shape [batch, 2]
-        class 0 -> not_smiley
-        class 1 -> smiley
-    """
+        Parameters
+        ----------
+        base_dir : str
+            Root dataset directory.
+        """
+        base = Path(base_dir)
+        folders = [
+            base / "images" / "train",
+            base / "images" / "val",
+            base / "images" / "test",
+            base / "labels" / "train",
+            base / "labels" / "val",
+            base / "labels" / "test",
+        ]
+        for folder in folders:
+            folder.mkdir(parents=True, exist_ok=True)
 
-    def __init__(self) -> None:
-        super().__init__()
+    @staticmethod
+    def write_data_yaml(base_dir: str = "data", class_names: Optional[Dict[int, str]] = None) -> Path:
+        """
+        Create data.yaml for Ultralytics training.
 
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),   # 64 -> 32
+        Parameters
+        ----------
+        base_dir : str
+            Root dataset directory.
+        class_names : dict[int, str] | None
+            Class dictionary. For this project use {0: "QR"}.
 
-            nn.Conv2d(16, 32, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),   # 32 -> 16
+        Returns
+        -------
+        Path
+            Path to the written YAML file.
+        """
+        if class_names is None:
+            class_names = {0: "QR"}
 
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),   # 16 -> 8
-        )
+        base = Path(base_dir)
+        yaml_path = base / "data.yaml"
 
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(64 * 8 * 8, 128),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(128, 2),
-        )
+        lines = [
+            f"path: {base.resolve().as_posix()}",
+            "train: images/train",
+            "val: images/val",
+            "test: images/test",
+            "",
+            f"nc: {len(class_names)}",
+            "names:",
+        ]
+        for idx, name in class_names.items():
+            lines.append(f"  {idx}: {name}")
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
+        yaml_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return yaml_path
 
-
-class Detector:
-    """
-    Wrapper around the neural network model.
-
-    This first version classifies the whole frame.
-    Later, you can extend it to produce bounding boxes and centers.
-    """
-
-    def __init__(
+    def train(
         self,
-        model_path: Optional[str] = None,
-        config: Optional[DetectorConfig] = None,
-    ) -> None:
-        self.config = config or DetectorConfig()
-        self.device = torch.device(self.config.device)
-
-        self.model = SmileyCNN().to(self.device)
-        self.model.eval()
-
-        if model_path is not None:
-            self.load(model_path)
-
-    def load(self, model_path: str) -> None:
-        """Load trained weights from disk."""
-        state_dict = torch.load(model_path, map_location=self.device)
-        self.model.load_state_dict(state_dict)
-        self.model.eval()
-
-    def preprocess(self, frame: np.ndarray) -> torch.Tensor:
+        data_yaml: str = "data/data.yaml",
+        epochs: int = 50,
+        batch: int = 16,
+        imgsz: int = 640,
+        optimizer: str = "auto",
+        project: str = "runs/detect",
+        name: str = "qr_detector_v1",
+    ):
         """
-        Convert OpenCV frame to model input tensor.
+        Train the detector on the custom QR dataset.
 
-        Steps:
-        - BGR -> RGB
-        - resize to fixed input size
-        - normalize to [0,1]
-        - HWC -> CHW
-        - add batch dimension
+        Parameters
+        ----------
+        data_yaml : str
+            Path to the dataset YAML file.
+        epochs : int
+            Start with 50 as discussed.
+        batch : int
+            Batch size. Reduce if the GPU runs out of memory.
+        imgsz : int
+            Input image size. 640 is a common default for detection.
+        optimizer : str
+            Keep 'auto' first; tune later only if needed.
+        project : str
+            Output project folder.
+        name : str
+            Run name.
+
+        Returns
+        -------
+        Training results object from Ultralytics.
         """
-        if frame is None:
-            raise ValueError("Input frame is None.")
+        return self.model.train(
+            data=data_yaml,
+            epochs=epochs,
+            batch=batch,
+            imgsz=imgsz,
+            optimizer=optimizer,
+            project=project,
+            name=name,
+            pretrained=True,
+        )
 
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        resized = cv2.resize(rgb, (self.config.image_size, self.config.image_size))
-        normalized = resized.astype(np.float32) / 255.0
-        chw = np.transpose(normalized, (2, 0, 1))
-        tensor = torch.tensor(chw, dtype=torch.float32).unsqueeze(0)
-        return tensor.to(self.device)
-
-    @torch.no_grad()
-    def predict(self, frame: np.ndarray) -> Dict[str, object]:
+    def validate(self, data_yaml: str = "data/data.yaml"):
         """
-        Predict whether the target smiley is present in the frame.
+        Validate the currently loaded model on the dataset.
 
-        Returns a dictionary compatible with your future pipeline.
+        Parameters
+        ----------
+        data_yaml : str
+            Path to dataset YAML.
         """
-        x = self.preprocess(frame)
-        logits = self.model(x)
-        probs = torch.softmax(logits, dim=1)[0]
+        return self.model.val(data=data_yaml)
 
-        not_smiley_prob = float(probs[0].item())
-        smiley_prob = float(probs[1].item())
+    def predict_image(self, image_path: str, save: bool = False):
+        """
+        Run inference on a single image.
 
-        found = smiley_prob >= self.config.threshold
+        Parameters
+        ----------
+        image_path : str
+            Path to image file.
+        save : bool
+            Whether to save YOLO visual outputs.
+        """
+        return self.model.predict(source=image_path, conf=self.conf_threshold, save=save)
 
-        return {
-            "found": found,
-            "confidence": smiley_prob,
-            "label": "smiley" if found else "not_smiley",
-            "raw_probs": {
-                "not_smiley": not_smiley_prob,
-                "smiley": smiley_prob,
-            },
-        }
+    def predict_frame(self, frame):
+        """
+        Run inference on an OpenCV frame (NumPy array).
+
+        Parameters
+        ----------
+        frame : np.ndarray
+            Input BGR frame.
+
+        Returns
+        -------
+        ultralytics.engine.results.Results
+            First result object.
+        """
+        results = self.model.predict(source=frame, conf=self.conf_threshold, verbose=False)
+        return results[0]
+
+    def extract_detections(self, result) -> List[Dict]:
+        """
+        Convert YOLO results into a simpler Python list.
+
+        Parameters
+        ----------
+        result : ultralytics.engine.results.Results
+            YOLO result object for one image/frame.
+
+        Returns
+        -------
+        list[dict]
+            List with bounding boxes, confidence, class id and class name.
+        """
+        detections: List[Dict] = []
+
+        if result.boxes is None:
+            return detections
+
+        for box in result.boxes:
+            cls_id = int(box.cls[0].item())
+            conf = float(box.conf[0].item())
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+
+            detections.append(
+                {
+                    "class_id": cls_id,
+                    "class_name": result.names.get(cls_id, str(cls_id)),
+                    "confidence": conf,
+                    "xyxy": [x1, y1, x2, y2],
+                    "center": [(x1 + x2) / 2.0, (y1 + y2) / 2.0],
+                    "width": x2 - x1,
+                    "height": y2 - y1,
+                }
+            )
+
+        return detections
+
+    def annotate_frame(self, frame, result):
+        """
+        Draw YOLO bounding boxes and labels on a frame.
+
+        Parameters
+        ----------
+        frame : np.ndarray
+            BGR image.
+        result : ultralytics.engine.results.Results
+            YOLO result object.
+
+        Returns
+        -------
+        np.ndarray
+            Annotated frame.
+        """
+        annotated = frame.copy()
+        detections = self.extract_detections(result)
+
+        for det in detections:
+            if det["confidence"] < self.conf_threshold:
+                continue
+
+            x1, y1, x2, y2 = map(int, det["xyxy"])
+            cx, cy = map(int, det["center"])
+            label = f'{det["class_name"]}: {det["confidence"]:.2f}'
+
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.circle(annotated, (cx, cy), 4, (0, 0, 255), -1)
+            cv2.putText(
+                annotated,
+                label,
+                (x1, max(20, y1 - 10)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2,
+                cv2.LINE_AA,
+            )
+
+        return annotated
+
+
+def main() -> None:
+    """
+    Prepare the dataset structure and YAML file.
+
+    This does not train automatically, because you first need to place your
+    images and matching label files into the dataset folders.
+    """
+    QRDetector.create_dataset_structure("data")
+    yaml_path = QRDetector.write_data_yaml("data", {0: "QR"})
+    print(f"Dataset folders ready. YAML written to: {yaml_path}")
+    print("Add your images and matching YOLO .txt label files, then train with:")
+    print()
+    print("from detector import QRDetector")
+    print("detector = QRDetector('yolov8n.pt')")
+    print("detector.train(data_yaml='data/data.yaml', epochs=50, batch=16, imgsz=640)")
+
+
+if __name__ == "__main__":
+    main()
