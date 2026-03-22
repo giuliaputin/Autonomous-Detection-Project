@@ -109,7 +109,8 @@ Notes:
 
 ## Runtime Usage
 
-The decoder is intentionally standalone and not wired into main.py yet.
+The decoder is standalone and can now be exercised through dedicated manual
+debug paths.
 
 Use the public interface from qr_reader/interface.py:
 
@@ -117,24 +118,47 @@ Use the public interface from qr_reader/interface.py:
 - Call process_frame(frame, frame_index, detections)
 - Read accepted payloads from result["accepted"]
 
-This keeps vision webcam code independent while detection and integration are still under development.
+Debug entrypoints:
 
-## Testing Checklist
+- `python manual_qr_image_debug.py --input <image-or-folder> --log-level DEBUG --show`
+- `python main.py --decode-live --log-level DEBUG`
 
-1. Unit tests
-   - BBox expansion and clipping at image boundaries.
-   - Temporal confirmer streak and cooldown behavior.
-   - Variant ordering and stop-on-first-success behavior.
+Default `main.py` behavior remains webcam display only when `--decode-live` is
+not provided.
 
-2. Integration tests
-   - Known-good QR crops.
-   - Hard cases: blur, low light, angle, small QR in frame.
-   - False-positive suppression across noisy frames.
+## Logging and Telemetry
 
-3. Live validation
+The qr_reader package now emits structured logs via Python `logging`:
+
+- `INFO`: frame-level summary and accepted payload events.
+- `DEBUG`: per-attempt decode telemetry (method, variant, latency, outcome),
+  fallback path progression, and temporal confirmer state.
+
+Use `configure_qr_reader_logging(level=...)` to control verbosity.
+
+## Manual Testing Checklist (Current)
+
+1. Static image validation (uploaded images)
+  - Run `manual_qr_image_debug.py` on a folder of known QR images.
+  - Start with `--min-consecutive-frames 1 --cooldown-frames 0`.
+  - Confirm printed candidate attempts and accepted payloads are correct.
+
+2. Robustness pass on hard samples
+  - Include blur, low light, angle, and small-QR examples.
+  - Inspect debug logs to verify fallback variants are attempted as expected.
+  - Compare winning method/variant across difficult images.
+
+3. Live camera validation
+  - Run `python main.py --decode-live --log-level DEBUG`.
+  - Present known QR payloads and verify accepted events in console.
+  - Confirm cooldown behavior suppresses duplicate repeated emissions.
+
+4. Performance sanity check
    - Verify accepted payloads match package labels.
-   - Verify same package is not repeatedly accepted every frame.
-   - Check frame loop responsiveness and stable latency.
+  - Keep frame loop responsive while DEBUG logs are enabled.
+  - If logs are too noisy, switch to `--log-level INFO`.
+
+Automated testing strategy is intentionally deferred and will be added later.
 
 ## Engineering Notes
 
