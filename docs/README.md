@@ -4,7 +4,9 @@ This folder contains technical documentation for the Autonomous Detection Projec
 
 ## Documents
 
-- [QR Decoding Pipeline](qr-decoding-pipeline.md): Design and implementation guide for QR reading using detector-provided bounding boxes.
+- `ARCHITECTURE.md`: Module ownership, dependency boundaries, and runtime flow.
+- `qr-detection-pipeline.md`: Detector training and inference workflows.
+- `qr-decoding-pipeline.md`: Decoder pipeline, interfaces, and tuning behavior.
 
 ## Manual Debug Quick Start
 
@@ -15,7 +17,7 @@ Use these commands from project root for manual validation:
 python scripts/manual_qr_image_debug.py --input data/images/test --log-level DEBUG --show
 
 # Optional live webcam decode debug
-python main.py --decode-live --log-level DEBUG
+python main.py --decode-live --model qr_detection/runs/detect/qr_detector_v17/weights/best.pt --log-level DEBUG --fps 5
 ```
 
 Notes:
@@ -23,6 +25,7 @@ Notes:
 - `scripts/manual_qr_image_debug.py` is the recommended first step for controlled tests.
 - Keep `--min-consecutive-frames 1 --cooldown-frames 0` for static image batches.
 - Use `--log-level INFO` for concise output or `DEBUG` for attempt-level detail.
+- If detections are found but filtered to zero, class names from detector outputs do not match accepted QR classes.
 
 ## Documentation Scope
 

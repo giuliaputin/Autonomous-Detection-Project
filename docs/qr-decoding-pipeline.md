@@ -38,8 +38,17 @@ Build a robust and understandable QR reading stage for the drone inventory workf
 - qr_decoder/src/interface.py
   - Public decoder interface entrypoint for external modules.
 
+- core/orchestration.py
+  - Shared detector->decode orchestration reused by app entrypoints.
+
+- apps/decode_live.py
+  - Live webcam detect+decode mode.
+
+- apps/image_debug.py
+  - Manual image debug flow.
+
 - main.py
-  - Webcam-only runtime loop (decoder not coupled yet).
+  - Thin dispatcher only (delegates to app modules).
 
 ## Input Contract
 
@@ -66,7 +75,7 @@ Detections must be provided by the caller (detection-agnostic design).
    - mild denoise
 7. Collect attempt telemetry and per-frame decode candidates.
 8. Confirm payloads across consecutive frames.
-9. Emit accepted payloads (currently logging in main loop).
+9. Emit accepted payloads in app mode output/logging.
 
 ## Temporal Confirmation Policy
 
@@ -109,8 +118,7 @@ Notes:
 
 ## Runtime Usage
 
-The decoder is standalone and can now be exercised through dedicated manual
-debug paths.
+The decoder is standalone and exercised through delegated app flows.
 
 Use the public interface from qr_decoder/src/interface.py:
 
@@ -121,10 +129,9 @@ Use the public interface from qr_decoder/src/interface.py:
 Debug entrypoints:
 
 - `python scripts/manual_qr_image_debug.py --input <image-or-folder> --log-level DEBUG --show`
-- `python main.py --decode-live --log-level DEBUG`
+- `python main.py --decode-live --model <trained-weights> --log-level DEBUG --fps 5`
 
-Default `main.py` behavior remains webcam display only when `--decode-live` is
-not provided.
+Default `main.py` behavior remains webcam display only when `--decode-live` is not provided.
 
 ## Logging and Telemetry
 
@@ -133,6 +140,7 @@ The qr_decoder package now emits structured logs via Python `logging`:
 - `INFO`: frame-level summary and accepted payload events.
 - `DEBUG`: per-attempt decode telemetry (method, variant, latency, outcome),
   fallback path progression, and temporal confirmer state.
+- Additional `DEBUG` diagnostics indicate when detections were dropped by class-name filtering.
 
 Use `configure_qr_decoder_logging(level=...)` to control verbosity.
 
@@ -149,7 +157,7 @@ Use `configure_qr_decoder_logging(level=...)` to control verbosity.
   - Compare winning method/variant across difficult images.
 
 3. Live camera validation
-  - Run `python main.py --decode-live --log-level DEBUG`.
+  - Run `python main.py --decode-live --model <trained-weights> --log-level DEBUG --fps 5`.
   - Present known QR payloads and verify accepted events in console.
   - Confirm cooldown behavior suppresses duplicate repeated emissions.
 

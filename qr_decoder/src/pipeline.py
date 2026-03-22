@@ -191,6 +191,14 @@ class QRDecodePipeline:
         timestamp_s = time() if timestamp_s is None else timestamp_s
 
         filtered = [d for d in detections if self._is_target_qr_class(d)]
+        if detections and not filtered:
+            seen_classes = [str(d.get("class_name", "")).strip().lower() for d in detections]
+            logger.debug(
+                "Frame %d filtered all detections. Allowed=%s Seen=%s",
+                frame_index,
+                sorted(self.filter_class_names),
+                seen_classes,
+            )
         candidates = self.decoder.decode_detections(frame, filtered)
         accepted_payloads = self.confirmer.update(frame_index, candidates)
 
