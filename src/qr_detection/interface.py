@@ -1,11 +1,11 @@
 from pathlib import Path
 from multiprocessing import freeze_support
-from detector import QRDetector
+from .detector import QRDetector
 
 def main() -> None:
-    # interface.py is in <project_root>/qr_detection/interface.py
-    project_root = Path(__file__).resolve().parents[1]
-    data_yaml = project_root / "data" / "data.yaml"
+    # interface.py is in <src>/qr_detection/interface.py
+    project_root = Path(__file__).resolve().parents[2]  # Go up 2 levels to project root
+    data_yaml = Path(__file__).resolve().parent / "data" / "data.yaml"  # Data is now in qr_detection
 
     if not data_yaml.exists():
         raise FileNotFoundError(f"Dataset config not found: {data_yaml}")
