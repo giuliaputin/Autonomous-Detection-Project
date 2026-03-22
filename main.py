@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from time import perf_counter
 
 import cv2
 
@@ -55,6 +56,7 @@ def run_live_decode_debug(
     height: int = 480,
     model_path: str = "yolov8n.pt",
     log_level: int = logging.INFO,
+    target_fps: float = 5.0,
 ) -> None:
     """Run live detector + QR decoder debugging on webcam frames.
 
@@ -70,6 +72,8 @@ def run_live_decode_debug(
         Path to YOLO detection model used by QR detector.
     log_level : int, optional
         Logging level for qr_decoder instrumentation.
+    target_fps : float, optional
+        Target render/process rate for the live debug loop.
     """
     from qr_detection.detector import QRDetector
     from qr_decoder.src import build_decoder_interface, configure_qr_decoder_logging
@@ -80,10 +84,12 @@ def run_live_decode_debug(
     detector = QRDetector(model_path=model_path)
     decoder = build_decoder_interface(min_consecutive_frames=2, cooldown_frames=25)
     camera = Camera(camera_index=camera_index, width=width, height=height)
+    frame_budget_s = 1.0 / max(target_fps, 0.1)
 
     frame_index = 0
     try:
         while True:
+            frame_started = perf_counter()
             frame = camera.read()
             if frame is None:
                 print("Warning: frame is None, retrying...")
@@ -107,7 +113,10 @@ def run_live_decode_debug(
             frame_to_show = outcome["annotated_frame"] if outcome["annotated_frame"] is not None else frame
             cv2.imshow("Webcam Feed (QR Debug)", frame_to_show)
 
-            key = cv2.waitKey(1) & 0xFF
+            # Slow the loop to make detections/decodes easier to inspect visually.
+            elapsed_s = perf_counter() - frame_started
+            wait_ms = max(1, int((frame_budget_s - elapsed_s) * 1000.0))
+            key = cv2.waitKey(wait_ms) & 0xFF
             if key == 27:
                 break
 
@@ -128,6 +137,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--width", type=int, default=640, help="Capture width.")
     parser.add_argument("--height", type=int, default=480, help="Capture height.")
     parser.add_argument("--model", default="yolov8n.pt", help="Path to YOLO model file.")
+    parser.add_argument("--fps", type=float, default=5.0, help="Target FPS for decode-live mode.")
     parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -148,6 +158,7 @@ if __name__ == "__main__":
             height=args.height,
             model_path=args.model,
             log_level=level,
+            target_fps=args.fps,
         )
     else:
         run_camera_feed(camera_index=args.camera_index, width=args.width, height=args.height)
