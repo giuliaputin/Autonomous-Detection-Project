@@ -12,7 +12,7 @@ Use these commands from project root for manual validation:
 
 ```bash
 # Manual uploaded-image debug (single file or folder)
-python manual_qr_image_debug.py --input data/images/test --log-level DEBUG --show
+python scripts/manual_qr_image_debug.py --input data/images/test --log-level DEBUG --show
 
 # Optional live webcam decode debug
 python main.py --decode-live --log-level DEBUG
@@ -20,7 +20,7 @@ python main.py --decode-live --log-level DEBUG
 
 Notes:
 
-- `manual_qr_image_debug.py` is the recommended first step for controlled tests.
+- `scripts/manual_qr_image_debug.py` is the recommended first step for controlled tests.
 - Keep `--min-consecutive-frames 1 --cooldown-frames 0` for static image batches.
 - Use `--log-level INFO` for concise output or `DEBUG` for attempt-level detail.
 

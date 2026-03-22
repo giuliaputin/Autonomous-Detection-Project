@@ -6,8 +6,8 @@ human-readable per-image summary so you can inspect what happened.
 
 Example usage
 -------------
-python manual_qr_image_debug.py --input data/images/test --log-level DEBUG --show
-python manual_qr_image_debug.py --input some_image.jpg --min-consecutive-frames 1
+python scripts/manual_qr_image_debug.py --input data/images/test --log-level DEBUG --show
+python scripts/manual_qr_image_debug.py --input some_image.jpg --min-consecutive-frames 1
 """
 
 from __future__ import annotations
@@ -15,12 +15,19 @@ from __future__ import annotations
 import argparse
 import logging
 from pathlib import Path
+import sys
 from typing import Iterable, List
 
 import cv2
 
+# Ensure imports resolve when running this script via
+# `python scripts/manual_qr_image_debug.py` from project root.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from qr_detection.detector import QRDetector
-from qr_reader import build_decoder_interface, configure_qr_reader_logging
+from qr_decoder.src import build_decoder_interface, configure_qr_decoder_logging
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,7 +49,7 @@ def parse_args() -> argparse.Namespace:
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="DEBUG",
-        help="qr_reader log level.",
+        help="qr_decoder log level.",
     )
     parser.add_argument(
         "--min-consecutive-frames",
@@ -159,7 +166,7 @@ def run() -> None:
     args = parse_args()
 
     log_level = getattr(logging, args.log_level)
-    configure_qr_reader_logging(level=log_level)
+    configure_qr_decoder_logging(level=log_level)
     logging.getLogger("ultralytics").setLevel(logging.WARNING)
 
     detector = QRDetector(model_path=args.model)

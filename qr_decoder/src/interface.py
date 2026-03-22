@@ -19,8 +19,8 @@ from .pipeline import QRDecodePipeline, TemporalQRConfirmer
 logger = logging.getLogger(__name__)
 
 
-def configure_qr_reader_logging(level: int = logging.INFO) -> None:
-    """Configure package-scoped logging for QR reader components.
+def configure_qr_decoder_logging(level: int = logging.INFO) -> None:
+    """Configure package-scoped logging for QR decoder components.
 
     Parameters
     ----------
@@ -29,11 +29,11 @@ def configure_qr_reader_logging(level: int = logging.INFO) -> None:
 
     Notes
     -----
-    This function configures the ``qr_reader`` logger namespace with a single
+    This function configures the ``qr_decoder`` logger namespace with a single
     stream handler when none is present. It avoids duplicate handlers when
     called multiple times.
     """
-    root_logger = logging.getLogger("qr_reader")
+    root_logger = logging.getLogger("qr_decoder")
     root_logger.setLevel(level)
 
     if not root_logger.handlers:
@@ -42,7 +42,7 @@ def configure_qr_reader_logging(level: int = logging.INFO) -> None:
         handler.setFormatter(formatter)
         root_logger.addHandler(handler)
 
-    logger.debug("Configured qr_reader logging at level=%s.", level)
+    logger.debug("Configured qr_decoder logging at level=%s.", level)
 
 
 class QRDecoderInterface:

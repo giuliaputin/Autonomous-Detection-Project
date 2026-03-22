@@ -13,7 +13,7 @@ Public exports are grouped so callers can either:
 
 from .decoder import DecodeAttempt, DecodeCandidate, QRDecoder
 from .pipeline import QRDecodePipeline, TemporalQRConfirmer, AcceptedQR
-from .interface import QRDecoderInterface, build_decoder_interface, configure_qr_reader_logging
+from .interface import QRDecoderInterface, build_decoder_interface, configure_qr_decoder_logging
 
 __all__ = [
     "DecodeAttempt",
@@ -24,5 +24,5 @@ __all__ = [
     "AcceptedQR",
     "QRDecoderInterface",
     "build_decoder_interface",
-    "configure_qr_reader_logging",
+    "configure_qr_decoder_logging",
 ]

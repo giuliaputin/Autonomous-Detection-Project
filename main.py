@@ -69,12 +69,12 @@ def run_live_decode_debug(
     model_path : str, optional
         Path to YOLO detection model used by QR detector.
     log_level : int, optional
-        Logging level for qr_reader instrumentation.
+        Logging level for qr_decoder instrumentation.
     """
     from qr_detection.detector import QRDetector
-    from qr_reader import build_decoder_interface, configure_qr_reader_logging
+    from qr_decoder.src import build_decoder_interface, configure_qr_decoder_logging
 
-    configure_qr_reader_logging(level=log_level)
+    configure_qr_decoder_logging(level=log_level)
     logging.getLogger("ultralytics").setLevel(logging.WARNING)
 
     detector = QRDetector(model_path=model_path)
@@ -132,7 +132,7 @@ def parse_args() -> argparse.Namespace:
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Log level for qr_reader components in decode mode.",
+        help="Log level for qr_decoder components in decode mode.",
     )
     return parser.parse_args()
 

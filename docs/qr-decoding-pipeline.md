@@ -21,21 +21,21 @@ Build a robust and understandable QR reading stage for the drone inventory workf
 
 ## Module Structure
 
-- qr_reader/utils.py
+- qr_decoder/src/utils.py
   - BBox clamping and expansion.
   - Crop extraction.
   - Lightweight preprocessing variants.
 
-- qr_reader/decoder.py
+- qr_decoder/src/decoder.py
   - Decoder engine and attempt telemetry.
   - zxing-cpp first, OpenCV fallback.
   - Variant retry loop.
 
-- qr_reader/pipeline.py
+- qr_decoder/src/pipeline.py
   - Orchestration for decode -> temporal confirm.
   - Accepted payload filtering and frame annotation.
 
-- qr_reader/interface.py
+- qr_decoder/src/interface.py
   - Public decoder interface entrypoint for external modules.
 
 - main.py
@@ -112,7 +112,7 @@ Notes:
 The decoder is standalone and can now be exercised through dedicated manual
 debug paths.
 
-Use the public interface from qr_reader/interface.py:
+Use the public interface from qr_decoder/src/interface.py:
 
 - Build interface: build_decoder_interface(...)
 - Call process_frame(frame, frame_index, detections)
@@ -120,7 +120,7 @@ Use the public interface from qr_reader/interface.py:
 
 Debug entrypoints:
 
-- `python manual_qr_image_debug.py --input <image-or-folder> --log-level DEBUG --show`
+- `python scripts/manual_qr_image_debug.py --input <image-or-folder> --log-level DEBUG --show`
 - `python main.py --decode-live --log-level DEBUG`
 
 Default `main.py` behavior remains webcam display only when `--decode-live` is
@@ -128,18 +128,18 @@ not provided.
 
 ## Logging and Telemetry
 
-The qr_reader package now emits structured logs via Python `logging`:
+The qr_decoder package now emits structured logs via Python `logging`:
 
 - `INFO`: frame-level summary and accepted payload events.
 - `DEBUG`: per-attempt decode telemetry (method, variant, latency, outcome),
   fallback path progression, and temporal confirmer state.
 
-Use `configure_qr_reader_logging(level=...)` to control verbosity.
+Use `configure_qr_decoder_logging(level=...)` to control verbosity.
 
 ## Manual Testing Checklist (Current)
 
 1. Static image validation (uploaded images)
-  - Run `manual_qr_image_debug.py` on a folder of known QR images.
+  - Run `scripts/manual_qr_image_debug.py` on a folder of known QR images.
   - Start with `--min-consecutive-frames 1 --cooldown-frames 0`.
   - Confirm printed candidate attempts and accepted payloads are correct.
 
