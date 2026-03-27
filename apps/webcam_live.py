@@ -10,6 +10,7 @@ from vision.camera import Camera
 def run(camera_index: int = 0, width: int = 640, height: int = 480) -> None:
     """Run webcam preview without detection or decode."""
     camera = Camera(camera_index=camera_index, width=width, height=height)
+    window_name = "Webcam Feed"
 
     try:
         while True:
@@ -18,7 +19,15 @@ def run(camera_index: int = 0, width: int = 640, height: int = 480) -> None:
                 print("Warning: frame is None, retrying...")
                 continue
 
-            cv2.imshow("Webcam Feed", frame)
+            cv2.imshow(window_name, frame)
+
+            # Exit when the user closes the window using the title-bar close button.
+            try:
+                if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
+                    break
+            except cv2.error:
+                break
+
             if (cv2.waitKey(1) & 0xFF) == 27:
                 break
     except KeyboardInterrupt:

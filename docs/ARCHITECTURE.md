@@ -16,7 +16,7 @@ This document describes the runtime boundaries and module ownership for the proj
   - Routes to CLI entrypoint logic in `apps`.
 - `apps/`
   - User-facing runnable modes.
-  - Argument parsing and mode dispatch.
+  - Subcommand parsing (`webcam`, `live`, `image`) and mode dispatch.
   - No heavy business logic.
 - `core/`
   - Shared orchestration used by app modes.
@@ -28,12 +28,12 @@ This document describes the runtime boundaries and module ownership for the proj
   - `src/` contains implementation modules.
   - `data/` stores manual debug inputs.
 - `scripts/`
-  - Thin wrappers only.
-  - Should call into `apps` or package entrypoints.
+  - Optional convenience wrappers only.
+  - Not required for core runtime usage.
 
 ## Runtime Flow
 
-1. User runs `main.py` or a thin wrapper under `scripts/`.
+1. User runs `main.py <subcommand>`.
 2. `apps.entrypoints` resolves selected mode.
 3. App mode calls shared helpers from `core.orchestration`.
 4. Detector returns candidate bounding boxes.
@@ -46,7 +46,7 @@ This document describes the runtime boundaries and module ownership for the proj
 - `apps` can import `core`, `vision`, `qr_detection`, and `qr_decoder`.
 - `core` must remain generic and import-light.
 - `qr_decoder` must not depend on `apps` or `main.py`.
-- `scripts` must not contain business logic.
+- `scripts`, if present, must not contain business logic.
 
 ## Logging
 

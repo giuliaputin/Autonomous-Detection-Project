@@ -282,7 +282,14 @@ class QRDecodePipeline:
                 text = "decode_failed"
                 color = (0, 120, 255)
 
-            cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+            # Draw decode box inset so the original detection box remains visible.
+            inset = 3
+            if (x2 - x1) > (2 * inset + 4) and (y2 - y1) > (2 * inset + 4):
+                dx1, dy1, dx2, dy2 = x1 + inset, y1 + inset, x2 - inset, y2 - inset
+            else:
+                dx1, dy1, dx2, dy2 = x1, y1, x2, y2
+
+            cv2.rectangle(annotated, (dx1, dy1), (dx2, dy2), color, 2)
             cv2.putText(
                 annotated,
                 text,

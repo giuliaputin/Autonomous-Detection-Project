@@ -23,16 +23,16 @@ install-dev:
 	python -m pip install -e .[dev]
 
 run-webcam:
-	python main.py
+	python main.py webcam
 
 run-decode-live:
-	python main.py --decode-live --fps 5 --log-level INFO
+	python main.py live --model qr_detection/runs/detect/qr_detector_v17/weights/best.pt --fps 5 --log-level INFO
 
 run-image-debug:
-	python scripts/manual_qr_image_debug.py --input qr_decoder/data --log-level DEBUG --show
+	python main.py image --input qr_decoder/data --log-level DEBUG --show
 
 run-image-debug-fallback:
-	python scripts/manual_qr_image_debug.py --input qr_decoder/data --log-level DEBUG --full-frame-fallback --show
+	python main.py image --input qr_decoder/data --log-level DEBUG --full-frame-fallback --show
 
 train-detector:
 	python -m qr_detection.train

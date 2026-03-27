@@ -128,10 +128,10 @@ Use the public interface from qr_decoder/src/interface.py:
 
 Debug entrypoints:
 
-- `python scripts/manual_qr_image_debug.py --input <image-or-folder> --log-level DEBUG --show`
-- `python main.py --decode-live --model <trained-weights> --log-level DEBUG --fps 5`
+- `python main.py image --input <image-or-folder> --log-level DEBUG --show`
+- `python main.py live --model <trained-weights> --log-level DEBUG --fps 5`
 
-Default `main.py` behavior remains webcam display only when `--decode-live` is not provided.
+Webcam-only mode is available explicitly via `python main.py webcam`.
 
 ## Logging and Telemetry
 
@@ -147,7 +147,7 @@ Use `configure_qr_decoder_logging(level=...)` to control verbosity.
 ## Manual Testing Checklist (Current)
 
 1. Static image validation (uploaded images)
-  - Run `scripts/manual_qr_image_debug.py` on a folder of known QR images.
+  - Run `python main.py image` on a folder of known QR images.
   - Start with `--min-consecutive-frames 1 --cooldown-frames 0`.
   - Confirm printed candidate attempts and accepted payloads are correct.
 
@@ -157,7 +157,7 @@ Use `configure_qr_decoder_logging(level=...)` to control verbosity.
   - Compare winning method/variant across difficult images.
 
 3. Live camera validation
-  - Run `python main.py --decode-live --model <trained-weights> --log-level DEBUG --fps 5`.
+  - Run `python main.py live --model <trained-weights> --log-level DEBUG --fps 5`.
   - Present known QR payloads and verify accepted events in console.
   - Confirm cooldown behavior suppresses duplicate repeated emissions.
 

@@ -33,6 +33,7 @@ def run(
     )
     camera = Camera(camera_index=camera_index, width=width, height=height)
     frame_budget_s = 1.0 / max(target_fps, 0.1)
+    window_name = "Webcam Feed (QR Debug)"
 
     frame_index = 0
     try:
@@ -51,7 +52,14 @@ def run(
                 )
 
             frame_to_show = outcome["annotated_frame"] if outcome["annotated_frame"] is not None else frame
-            cv2.imshow("Webcam Feed (QR Debug)", frame_to_show)
+            cv2.imshow(window_name, frame_to_show)
+
+            # Exit when the user closes the window using the title-bar close button.
+            try:
+                if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
+                    break
+            except cv2.error:
+                break
 
             elapsed_s = perf_counter() - frame_started
             wait_ms = max(1, int((frame_budget_s - elapsed_s) * 1000.0))

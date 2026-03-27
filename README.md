@@ -15,13 +15,13 @@ Computer-vision workspace for QR detection and QR payload decoding.
 
 ```bash
 # Webcam only
-python main.py
+python main.py webcam
 
 # Live detection + decode (5 FPS default)
-python main.py --decode-live --model qr_detection/runs/detect/qr_detector_v17/weights/best.pt --log-level DEBUG
+python main.py live --model qr_detection/runs/detect/qr_detector_v17/weights/best.pt --log-level DEBUG
 
-# Manual image debug wrapper (delegates to apps.image_debug)
-python scripts/manual_qr_image_debug.py --input qr_decoder/data --model qr_detection/runs/detect/qr_detector_v17/weights/best.pt --log-level DEBUG
+# Manual image debug for a file or folder
+python main.py image --input qr_decoder/data --model qr_detection/runs/detect/qr_detector_v17/weights/best.pt --log-level DEBUG
 ```
 
 ```bash

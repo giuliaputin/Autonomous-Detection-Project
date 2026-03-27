@@ -115,18 +115,42 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    log_level = getattr(logging, args.log_level)
-    configure_qr_decoder_logging(level=log_level)
+    return run(
+        input_path=args.input,
+        model_path=args.model,
+        log_level=args.log_level,
+        min_consecutive_frames=args.min_consecutive_frames,
+        cooldown_frames=args.cooldown_frames,
+        full_frame_fallback=args.full_frame_fallback,
+        show=args.show,
+    )
+
+
+def run(
+    input_path: str,
+    model_path: str = "yolov8n.pt",
+    log_level: str = "DEBUG",
+    min_consecutive_frames: int = 1,
+    cooldown_frames: int = 0,
+    full_frame_fallback: bool = False,
+    show: bool = False,
+) -> int:
+    """Run manual detector + decoder processing for uploaded images."""
+    level_name = log_level.upper()
+    if level_name not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
+        raise ValueError(f"Unsupported log level: {log_level}")
+
+    configure_qr_decoder_logging(level=getattr(logging, level_name))
     logging.getLogger("ultralytics").setLevel(logging.WARNING)
 
     orchestrator = DecodeOrchestrator.build(
-        model_path=args.model,
-        min_consecutive_frames=args.min_consecutive_frames,
-        cooldown_frames=args.cooldown_frames,
+        model_path=model_path,
+        min_consecutive_frames=min_consecutive_frames,
+        cooldown_frames=cooldown_frames,
     )
 
-    images = collect_images(Path(args.input))
-    print(f"Processing {len(images)} image(s) from: {args.input}")
+    images = collect_images(Path(input_path))
+    print(f"Processing {len(images)} image(s) from: {input_path}")
 
     for frame_index, image_path in enumerate(images):
         frame = cv2.imread(str(image_path))
@@ -136,7 +160,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         outcome = orchestrator.process_frame(frame=frame, frame_index=frame_index, return_annotated=True)
 
-        if args.full_frame_fallback and not outcome["detections"]:
+        if full_frame_fallback and not outcome["detections"]:
             full_frame_detection = {
                 "class_name": "qr",
                 "confidence": 1.0,
@@ -151,10 +175,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         print_candidate_summary(frame_index=frame_index, image_path=image_path, outcome=outcome)
 
-        if args.show:
+        if show:
             maybe_show(image_path.name, outcome, frame)
 
-    if args.show:
+    if show:
         cv2.destroyAllWindows()
 
     return 0
