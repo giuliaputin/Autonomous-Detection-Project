@@ -85,7 +85,9 @@ class QRDetector:
             folder.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def write_data_yaml(base_dir: str = "data", class_names: Optional[Dict[int, str]] = None) -> Path:
+    def write_data_yaml(
+        base_dir: str = "data", class_names: Optional[Dict[int, str]] = None
+    ) -> Path:
         """
         Create data.yaml for Ultralytics training.
 
@@ -271,7 +273,7 @@ class QRDetector:
 
             x1, y1, x2, y2 = map(int, det["xyxy"])
             cx, cy = map(int, det["center"])
-            label = f'{det["class_name"]}: {det["confidence"]:.2f}'
+            label = f"{det['class_name']}: {det['confidence']:.2f}"
 
             cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.circle(annotated, (cx, cy), 4, (0, 0, 255), -1)

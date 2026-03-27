@@ -6,18 +6,36 @@ import argparse
 from typing import Callable, List, Optional
 
 from apps import decode_live, image_debug, webcam_live
-from core.config import LiveDecodeDefaults, LOG_LEVEL_CHOICES, parse_log_level
+from core.config import LOG_LEVEL_CHOICES, LiveDecodeDefaults, parse_log_level
 
 
 def _add_shared_camera_args(parser: argparse.ArgumentParser, defaults: LiveDecodeDefaults) -> None:
-    """Add common camera options used by webcam and live modes."""
-    parser.add_argument("--camera-index", type=int, default=defaults.camera_index, help="OpenCV camera index.")
+    """Add shared camera arguments for webcam and live subcommands.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        Subcommand parser to mutate in-place.
+    defaults : LiveDecodeDefaults
+        Default runtime values used for argument defaults.
+    """
+    parser.add_argument(
+        "--camera-index", type=int, default=defaults.camera_index, help="OpenCV camera index."
+    )
     parser.add_argument("--width", type=int, default=defaults.width, help="Capture width.")
     parser.add_argument("--height", type=int, default=defaults.height, help="Capture height.")
 
 
 def _add_shared_decode_args(parser: argparse.ArgumentParser, defaults: LiveDecodeDefaults) -> None:
-    """Add common detector/decoder runtime options used by live and image modes."""
+    """Add shared detector/decoder arguments for live and image subcommands.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        Subcommand parser to mutate in-place.
+    defaults : LiveDecodeDefaults
+        Default runtime values used for argument defaults.
+    """
     parser.add_argument("--model", default=defaults.model_path, help="Path to YOLO model file.")
     parser.add_argument(
         "--log-level",
@@ -40,11 +58,35 @@ def _add_shared_decode_args(parser: argparse.ArgumentParser, defaults: LiveDecod
 
 
 def _run_webcam(args: argparse.Namespace) -> int:
+    """Execute webcam-only mode from parsed CLI namespace.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments containing camera options.
+
+    Returns
+    -------
+    int
+        Process exit code.
+    """
     webcam_live.run(camera_index=args.camera_index, width=args.width, height=args.height)
     return 0
 
 
 def _run_live(args: argparse.Namespace) -> int:
+    """Execute live decode mode from parsed CLI namespace.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments containing camera and decode options.
+
+    Returns
+    -------
+    int
+        Process exit code.
+    """
     decode_live.run(
         camera_index=args.camera_index,
         width=args.width,
@@ -59,6 +101,18 @@ def _run_live(args: argparse.Namespace) -> int:
 
 
 def _run_image(args: argparse.Namespace) -> int:
+    """Execute image debug mode from parsed CLI namespace.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments containing image debug options.
+
+    Returns
+    -------
+    int
+        Process exit code.
+    """
     return image_debug.run(
         input_path=args.input,
         model_path=args.model,
@@ -71,7 +125,13 @@ def _run_image(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build top-level parser for application modes."""
+    """Build top-level parser for application subcommands.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        Fully configured parser with mode handlers attached.
+    """
     defaults = LiveDecodeDefaults()
     parser = argparse.ArgumentParser(description="Run QR project application modes.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -83,10 +143,14 @@ def build_parser() -> argparse.ArgumentParser:
     live_parser = subparsers.add_parser("live", help="Run live detector + decoder mode.")
     _add_shared_camera_args(live_parser, defaults)
     _add_shared_decode_args(live_parser, defaults)
-    live_parser.add_argument("--fps", type=float, default=defaults.target_fps, help="Target processing FPS.")
+    live_parser.add_argument(
+        "--fps", type=float, default=defaults.target_fps, help="Target processing FPS."
+    )
     live_parser.set_defaults(handler=_run_live)
 
-    image_parser = subparsers.add_parser("image", help="Run image debug mode for one file or directory.")
+    image_parser = subparsers.add_parser(
+        "image", help="Run image debug mode for one file or directory."
+    )
     _add_shared_decode_args(image_parser, defaults)
     image_parser.add_argument(
         "--input",
@@ -105,7 +169,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    """Dispatch to selected application mode."""
+    """Parse CLI arguments and dispatch to selected mode handler.
+
+    Parameters
+    ----------
+    argv : Optional[List[str]], optional
+        Optional argument list. If ``None``, arguments are read from ``sys.argv``.
+
+    Returns
+    -------
+    int
+        Process exit code from selected mode handler.
+    """
     args = build_parser().parse_args(argv)
     handler: Callable[[argparse.Namespace], int] = args.handler
     return handler(args)

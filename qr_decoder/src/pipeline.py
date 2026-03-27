@@ -8,8 +8,8 @@ optional frame annotation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from time import time
 from typing import Any, Dict, List, Optional
 
@@ -17,7 +17,6 @@ import cv2
 import numpy as np
 
 from .decoder import DecodeCandidate, QRDecoder
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +38,7 @@ class AcceptedQR:
     source_method : Optional[str]
         Decode backend responsible for the accepted payload.
     """
+
     payload: str
     frame_index: int
     timestamp_s: float
@@ -95,7 +95,9 @@ class TemporalQRConfirmer:
                 by_payload[candidate.payload] = candidate
 
         for payload in by_payload:
-            state = self._state.get(payload, {"last_seen": -10_000, "streak": 0, "last_emitted": -10_000})
+            state = self._state.get(
+                payload, {"last_seen": -10_000, "streak": 0, "last_emitted": -10_000}
+            )
 
             if frame_index == state["last_seen"] + 1:
                 state["streak"] += 1
@@ -157,7 +159,9 @@ class QRDecodePipeline:
     ) -> None:
         self.decoder = decoder or QRDecoder()
         self.confirmer = confirmer or TemporalQRConfirmer()
-        self.filter_class_names = {name.lower() for name in (filter_class_names or ["qr", "qrcode"]) }
+        self.filter_class_names = {
+            name.lower() for name in (filter_class_names or ["qr", "qrcode"])
+        }
 
     def process_frame(
         self,

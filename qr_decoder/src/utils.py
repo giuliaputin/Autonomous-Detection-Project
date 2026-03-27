@@ -19,7 +19,9 @@ import cv2
 import numpy as np
 
 
-def clamp_bbox(xyxy: Sequence[float], frame_shape: Tuple[int, int, int]) -> Tuple[int, int, int, int]:
+def clamp_bbox(
+    xyxy: Sequence[float], frame_shape: Tuple[int, int, int]
+) -> Tuple[int, int, int, int]:
     """Clamp an XYXY bounding box to valid image coordinates.
 
     Parameters
@@ -118,7 +120,9 @@ def crop_from_bbox(frame: np.ndarray, xyxy: Sequence[int]) -> np.ndarray:
     return frame[y1:y2, x1:x2]
 
 
-def build_preprocessing_variants(crop_bgr: np.ndarray, max_variants: int = 5) -> List[Tuple[str, np.ndarray]]:
+def build_preprocessing_variants(
+    crop_bgr: np.ndarray, max_variants: int = 5
+) -> List[Tuple[str, np.ndarray]]:
     """Generate preprocessing variants ordered from cheap to expensive.
 
     Parameters

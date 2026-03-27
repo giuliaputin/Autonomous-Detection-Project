@@ -9,7 +9,7 @@ help:
 	@echo "  make run-image-debug    Run image debug mode on qr_decoder/data"
 	@echo "  make run-image-debug-fallback  Run image debug with full-frame decode fallback"
 	@echo "  make train-detector     Start detector training entrypoint"
-	@echo "  make lint               Run black/isort/flake8 checks"
+	@echo "  make lint               Run ruff checks"
 	@echo "  make format             Auto-format code"
 	@echo "  make test               Run pytest test suite"
 	@echo "  make pre-commit         Run pre-commit hooks"
@@ -38,13 +38,12 @@ train-detector:
 	python -m qr_detection.train
 
 lint:
-	python -m black --check .
-	python -m isort --check-only .
-	python -m flake8 .
+	python -m ruff check .
+	python -m ruff format --check .
 
 format:
-	python -m black .
-	python -m isort .
+	python -m ruff check --fix .
+	python -m ruff format .
 
 test:
 	python -m pytest tests -v

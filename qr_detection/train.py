@@ -9,7 +9,18 @@ from qr_detection.detector import QRDetector
 
 
 def main() -> None:
-    """Train the detector with dataset config from the repository data folder."""
+    """Train detector using repository dataset configuration.
+
+    Notes
+    -----
+    Uses ``data/data.yaml`` from project root and writes run artifacts into
+    ``qr_detection/runs/detect``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If expected dataset configuration file does not exist.
+    """
     project_root = Path(__file__).resolve().parents[1]
     data_yaml = project_root / "data" / "data.yaml"
 
@@ -19,6 +30,7 @@ def main() -> None:
     qr_detection_folder = Path(__file__).resolve().parent
     runs_output = qr_detection_folder / "runs"
 
+    # Start from a compact pretrained checkpoint for faster iteration.
     detector = QRDetector("yolov8n.pt")
     detector.train(
         data_yaml=str(data_yaml),

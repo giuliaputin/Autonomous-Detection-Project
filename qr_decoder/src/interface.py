@@ -15,7 +15,6 @@ import numpy as np
 from .decoder import QRDecoder
 from .pipeline import QRDecodePipeline, TemporalQRConfirmer
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +103,9 @@ class QRDecoderInterface:
         )
 
 
-def build_decoder_interface(min_consecutive_frames: int = 2, cooldown_frames: int = 25) -> QRDecoderInterface:
+def build_decoder_interface(
+    min_consecutive_frames: int = 2, cooldown_frames: int = 25
+) -> QRDecoderInterface:
     """Construct the default QR decoder interface.
 
     Parameters

@@ -1,34 +1,34 @@
-"""
-camera.py
+"""Webcam capture utilities.
 
-Module responsible for capturing frames from a webcam.
-
-This module provides a Camera class that:
-- Initializes the webcam
-- Captures frames
-- Releases the camera properly
-
+This module provides a thin wrapper over ``cv2.VideoCapture`` with backend
+fallback logic tuned for Windows camera compatibility.
 """
 
 import cv2
 
 
 class Camera:
+    """OpenCV webcam capture wrapper with backend fallback behavior."""
+
     def __init__(self, camera_index=0, width=640, height=480):
-        """
-        Initialize the webcam.
+        """Initialize webcam capture and apply requested resolution.
 
         Parameters
         ----------
-        camera_index : int
-            Index of the camera (0 is the default webcam for my hp)
-        width : int
-            Desired frame width
-        height : int
-            Desired frame height
+        camera_index : int, optional
+            Camera device index (``0`` is typically the default webcam).
+        width : int, optional
+            Requested frame width in pixels.
+        height : int, optional
+            Requested frame height in pixels.
+
+        Raises
+        ------
+        RuntimeError
+            If no backend can open the requested camera device.
         """
 
-        # common Windows backends to avoid camera being blocked by unsupported backend
+        # Probe common Windows backends in a stable order before falling back to CAP_ANY.
         backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY]
         self.cap = None
         for backend in backends:
@@ -37,14 +37,16 @@ class Camera:
                 self.cap = cap
                 break
             else:
+                # Release unsuccessful handles to avoid leaking camera locks.
                 cap.release()
 
         if self.cap is None or not self.cap.isOpened():
             raise RuntimeError(
-                "Error: Could not open webcam. Ensure no other app is using it and your camera device is available."
+                "Error: Could not open webcam. Ensure no other app is using it "
+                "and your camera device is available."
             )
 
-        # Set resolution
+        # Apply preferred capture resolution; backend may clamp to supported values.
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
@@ -52,13 +54,17 @@ class Camera:
         self.height = height
 
     def read(self):
-        """
-        Capture a single frame from the webcam.
+        """Capture one frame from webcam.
 
         Returns
         -------
-        frame : ndarray
-            The captured image frame
+        ndarray
+            Captured BGR frame.
+
+        Raises
+        ------
+        RuntimeError
+            If frame capture fails.
         """
 
         ret, frame = self.cap.read()
@@ -69,8 +75,6 @@ class Camera:
         return frame
 
     def release(self):
-        """Release the camera resource."""
+        """Release the underlying camera handle if it exists."""
         if self.cap is not None:
             self.cap.release()
-
-

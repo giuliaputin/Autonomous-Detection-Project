@@ -17,25 +17,27 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "black>=24.0.0",
-  "isort>=5.13.0",
-  "flake8>=7.0.0",
+  "ruff>=0.6.0",
   "pytest>=8.0.0",
   "pytest-cov>=5.0.0",
   "pre-commit>=3.7.0",
 ]
 
-[tool.black]
+[tool.setuptools.packages.find]
+include = ["apps*", "core*", "vision*", "qr_decoder*", "qr_detection*"]
+exclude = ["data*", "docs*", "labels*", "scripts*"]
+
+[tool.ruff]
 line-length = 100
-target-version = ["py39"]
-
-[tool.isort]
-profile = "black"
-line_length = 100
-
-[tool.flake8]
-max-line-length = 100
+target-version = "py39"
 exclude = [".git", "__pycache__", ".venv", "venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

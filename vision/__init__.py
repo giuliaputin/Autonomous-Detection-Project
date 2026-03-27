@@ -1,1 +1,1 @@
-"""Vision package for camera/input components."""
+"""vision package for drone/camera/input components."""

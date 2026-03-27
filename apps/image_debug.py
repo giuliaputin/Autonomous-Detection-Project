@@ -50,7 +50,25 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def collect_images(input_path: Path) -> List[Path]:
-    """Resolve image files from a single file path or a directory."""
+    """Resolve image files from a single file path or a directory.
+
+    Parameters
+    ----------
+    input_path : Path
+        Input image file path or directory containing image files.
+
+    Returns
+    -------
+    List[Path]
+        Sorted image paths to process.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``input_path`` does not exist.
+    ValueError
+        If ``input_path`` is a directory without supported image files.
+    """
     if not input_path.exists():
         raise FileNotFoundError(f"Input path does not exist: {input_path}")
 
@@ -58,7 +76,9 @@ def collect_images(input_path: Path) -> List[Path]:
         return [input_path]
 
     image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
-    images = sorted([p for p in input_path.iterdir() if p.is_file() and p.suffix.lower() in image_exts])
+    images = sorted(
+        [p for p in input_path.iterdir() if p.is_file() and p.suffix.lower() in image_exts]
+    )
     if not images:
         raise ValueError(f"No supported images found in directory: {input_path}")
 
@@ -66,7 +86,18 @@ def collect_images(input_path: Path) -> List[Path]:
 
 
 def print_candidate_summary(frame_index: int, image_path: Path, outcome: Dict) -> None:
-    """Print decode and acceptance details for one image."""
+    """Print formatted decode and acceptance details for one processed image.
+
+    Parameters
+    ----------
+    frame_index : int
+        Sequential index used by the processing loop.
+    image_path : Path
+        Path to the current image being summarized.
+    outcome : Dict
+        Result dict from pipeline processing containing detections, candidates,
+        and accepted payload events.
+    """
     candidates = outcome["decode_candidates"]
     accepted = outcome["accepted"]
 
@@ -96,7 +127,17 @@ def print_candidate_summary(frame_index: int, image_path: Path, outcome: Dict) -
 
 
 def maybe_show(image_name: str, outcome: Dict, fallback_frame) -> None:
-    """Display annotated frame and close safely even if user closes the window manually."""
+    """Display a debug window and handle manual close safely.
+
+    Parameters
+    ----------
+    image_name : str
+        Name used in the OpenCV window title.
+    outcome : Dict
+        Result dict from pipeline processing; may contain ``annotated_frame``.
+    fallback_frame : Any
+        Raw frame used when ``annotated_frame`` is not available.
+    """
     window_name = f"QR Debug - {image_name}"
     annotated = outcome.get("annotated_frame")
     to_show = annotated if annotated is not None else fallback_frame
@@ -111,7 +152,18 @@ def maybe_show(image_name: str, outcome: Dict, fallback_frame) -> None:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    """Run manual detector + decoder processing for uploaded images."""
+    """CLI wrapper for manual image debug mode.
+
+    Parameters
+    ----------
+    argv : Optional[List[str]], optional
+        Optional argument list. If ``None``, arguments are read from ``sys.argv``.
+
+    Returns
+    -------
+    int
+        Process exit code.
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -135,7 +187,35 @@ def run(
     full_frame_fallback: bool = False,
     show: bool = False,
 ) -> int:
-    """Run manual detector + decoder processing for uploaded images."""
+    """Run detector and decoder pipeline over one image or a directory.
+
+    Parameters
+    ----------
+    input_path : str
+        Input file or directory path containing images.
+    model_path : str, optional
+        Path to YOLO model weights used for detection.
+    log_level : str, optional
+        Decoder logging level name (``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``).
+    min_consecutive_frames : int, optional
+        Temporal acceptance threshold. For static images, ``1`` is typical.
+    cooldown_frames : int, optional
+        Temporal cooldown in frames. For static images, ``0`` is typical.
+    full_frame_fallback : bool, optional
+        If True, run full-frame decode when detector returns no boxes.
+    show : bool, optional
+        If True, show an OpenCV window for each processed image.
+
+    Returns
+    -------
+    int
+        Process exit code.
+
+    Raises
+    ------
+    ValueError
+        If ``log_level`` is not supported.
+    """
     level_name = log_level.upper()
     if level_name not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
         raise ValueError(f"Unsupported log level: {log_level}")
@@ -158,8 +238,11 @@ def run(
             print(f"[WARN] Could not read image: {image_path}")
             continue
 
-        outcome = orchestrator.process_frame(frame=frame, frame_index=frame_index, return_annotated=True)
+        outcome = orchestrator.process_frame(
+            frame=frame, frame_index=frame_index, return_annotated=True
+        )
 
+        # Optional static-image rescue path: decode full frame when detector misses.
         if full_frame_fallback and not outcome["detections"]:
             full_frame_detection = {
                 "class_name": "qr",

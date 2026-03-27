@@ -14,8 +14,8 @@ runtime behavior transparent during tuning.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -50,6 +50,7 @@ class DecodeAttempt:
     latency_ms : float
         End-to-end backend call latency in milliseconds.
     """
+
     method: str
     variant: str
     ok: bool
@@ -82,6 +83,7 @@ class DecodeCandidate:
     attempts : List[DecodeAttempt]
         Ordered history of all backend/variant attempts.
     """
+
     payload: Optional[str]
     symbology: Optional[str]
     bbox_xyxy: Tuple[int, int, int, int]
@@ -150,7 +152,9 @@ class QRDecoder:
 
         raw_xyxy = detection.get("xyxy", [0, 0, 1, 1])
         conf = float(detection.get("confidence", 0.0))
-        expanded_xyxy = expand_bbox_with_margin(raw_xyxy, frame.shape, margin_ratio=self.margin_ratio)
+        expanded_xyxy = expand_bbox_with_margin(
+            raw_xyxy, frame.shape, margin_ratio=self.margin_ratio
+        )
         crop = crop_from_bbox(frame, expanded_xyxy)
 
         logger.debug(
@@ -180,10 +184,15 @@ class QRDecoder:
         decoded = self._try_decode(crop, variant_name="raw", attempts=attempts)
 
         if decoded is None and self.enable_preprocessing:
-            logger.debug("Raw decode failed; trying preprocessing variants (max=%d).", self.max_preprocess_variants)
+            logger.debug(
+                "Raw decode failed; trying preprocessing variants (max=%d).",
+                self.max_preprocess_variants,
+            )
             variants = build_preprocessing_variants(crop, max_variants=self.max_preprocess_variants)
             for variant_name, variant_img in variants:
-                decoded = self._try_decode(variant_img, variant_name=variant_name, attempts=attempts)
+                decoded = self._try_decode(
+                    variant_img, variant_name=variant_name, attempts=attempts
+                )
                 if decoded is not None:
                     break
 
@@ -224,7 +233,9 @@ class QRDecoder:
             attempts=attempts,
         )
 
-    def decode_detections(self, frame: np.ndarray, detections: List[Dict[str, Any]]) -> List[DecodeCandidate]:
+    def decode_detections(
+        self, frame: np.ndarray, detections: List[Dict[str, Any]]
+    ) -> List[DecodeCandidate]:
         """Decode all candidate detections in one frame.
 
         Parameters
@@ -270,9 +281,13 @@ class QRDecoder:
 
         for method_name in order:
             if method_name == "zxing":
-                decoded = self._decode_with_zxing(image, variant_name=variant_name, attempts=attempts)
+                decoded = self._decode_with_zxing(
+                    image, variant_name=variant_name, attempts=attempts
+                )
             else:
-                decoded = self._decode_with_opencv(image, variant_name=variant_name, attempts=attempts)
+                decoded = self._decode_with_opencv(
+                    image, variant_name=variant_name, attempts=attempts
+                )
 
             if decoded is not None:
                 logger.debug("Variant '%s' succeeded with method '%s'.", variant_name, method_name)
@@ -370,7 +385,9 @@ class QRDecoder:
             latency_ms = (perf_counter() - started) * 1000.0
             ok = bool(payload)
             attempts.append(DecodeAttempt("opencv", variant_name, ok, payload, latency_ms))
-            logger.debug("opencv attempt: variant='%s' ok=%s latency=%.2fms", variant_name, ok, latency_ms)
+            logger.debug(
+                "opencv attempt: variant='%s' ok=%s latency=%.2fms", variant_name, ok, latency_ms
+            )
             if not ok:
                 return None
             return payload, "QR_CODE", "opencv", variant_name
