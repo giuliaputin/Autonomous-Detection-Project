@@ -1,0 +1,101 @@
+__pycache__/
+*.py[cod]
+*.class
+*.so
+*.dylib
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.env/
+.env.*
+env/
+.venv/
+venv.bak/
+venv_old/
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# PyCharm
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pytest
+.cache/
+.pytest_cache/
+
+# coverage
+htmlcov/
+.coverage
+.coverage.*
+.coverage_html/
+
+# pyre
+.pyre/
+
+# sphinx
+_build/
+
+# built distributions
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Wheel
+*.whl
+
+# logs and runtime
+*.log
+*.pid
+*.seed
+*.trace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dataset generated files
+data/images/
+data/label files/
+
+# ML artifacts
+*.ckpt
+*.pt
+*.pth
+*.h5
+*.joblib
+*.model
+*.sav
+
+# C-extension / Cython
+*.c
+*.cpp
+*.o
+*.so
+
+# temp
+*.tmp
+*.tmp.*
+*~
+data
+
+qr_detection/runs
+data
