@@ -5,6 +5,9 @@ opencv-python>=4.8.0
 # YOLOv8 training/inference stack (includes PyTorch dependency)
 ultralytics>=8.2.0
 
+# Drone control (Crazyflie)
+cflib
+
 # QR decoding
 zxing-cpp>=2.2.0
 
